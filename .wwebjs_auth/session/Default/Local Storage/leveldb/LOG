@@ -1,0 +1,39 @@
+2026/03/01-12:01:07.227 da2af Reusing MANIFEST /home/botuser/Bot/whatsapp-bot/.wwebjs_auth/session/Default/Local Storage/leveldb/MANIFEST-000001
+2026/03/01-12:01:07.236 da2af Recovering log #152
+2026/03/01-12:01:07.239 da2af Reusing old log /home/botuser/Bot/whatsapp-bot/.wwebjs_auth/session/Default/Local Storage/leveldb/000152.log 
+2026/03/01-17:21:29.172 da2af Level-0 table #156: started
+2026/03/01-17:21:29.181 da2af Level-0 table #156: 16453 bytes OK
+2026/03/01-17:21:29.188 da2af Delete type=0 #152
+2026/03/01-17:21:29.189 da2af Compacting 4@0 + 1@1 files
+2026/03/01-17:21:29.204 da2af Generated table #157@0: 262 keys, 14786 bytes
+2026/03/01-17:21:29.204 da2af Compacted 4@0 + 1@1 files => 14786 bytes
+2026/03/01-17:21:29.206 da2af compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/03/01-17:21:29.208 da2af Delete type=2 #156
+2026/03/01-17:21:29.208 da2af Delete type=2 #147
+2026/03/01-17:21:29.208 da2af Delete type=2 #151
+2026/03/01-17:21:29.208 da2af Delete type=2 #153
+2026/03/01-17:21:29.208 da2af Delete type=2 #149
+2026/03/02-10:12:27.731 da2af Level-0 table #159: started
+2026/03/02-10:12:27.744 da2af Level-0 table #159: 14561 bytes OK
+2026/03/02-10:12:27.751 da2af Delete type=0 #155
+2026/03/03-03:53:19.623 da2b6 Level-0 table #161: started
+2026/03/03-03:53:19.632 da2b6 Level-0 table #161: 14249 bytes OK
+2026/03/03-03:53:19.637 da2b6 Delete type=0 #158
+2026/03/03-14:03:53.706 da2b6 Level-0 table #163: started
+2026/03/03-14:03:53.710 da2b6 Level-0 table #163: 15820 bytes OK
+2026/03/03-14:03:53.715 da2b6 Delete type=0 #160
+2026/03/04-00:04:21.446 da2b6 Level-0 table #165: started
+2026/03/04-00:04:21.460 da2b6 Level-0 table #165: 16049 bytes OK
+2026/03/04-00:04:21.471 da2b6 Delete type=0 #162
+2026/03/04-00:04:21.473 da2b6 Compacting 4@0 + 1@1 files
+2026/03/04-00:04:21.488 da2b6 Generated table #166@0: 262 keys, 13885 bytes
+2026/03/04-00:04:21.489 da2b6 Compacted 4@0 + 1@1 files => 13885 bytes
+2026/03/04-00:04:21.492 da2b6 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/03/04-00:04:21.495 da2b6 Delete type=2 #157
+2026/03/04-00:04:21.495 da2b6 Delete type=2 #159
+2026/03/04-00:04:21.495 da2b6 Delete type=2 #161
+2026/03/04-00:04:21.495 da2b6 Delete type=2 #165
+2026/03/04-00:04:21.495 da2b6 Delete type=2 #163
+2026/03/04-15:25:12.007 da2b6 Level-0 table #168: started
+2026/03/04-15:25:12.022 da2b6 Level-0 table #168: 15466 bytes OK
+2026/03/04-15:25:12.036 da2b6 Delete type=0 #164
