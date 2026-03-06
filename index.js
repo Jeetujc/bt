@@ -160,7 +160,7 @@ client.on("message", async msg => {
     }
 
     const response = await axios.post(
-      "http://localhost:5000/process",
+      "http://localhost:5002/process",
       payload,
       { timeout: 30000 }
     );
@@ -212,8 +212,8 @@ app.post("/send-message", (req, res) => {
 
 client.initialize();
 
-app.listen(3001, () => {
-  console.log("🚀 Server running on port 3001");
+app.listen(3003, () => {
+  console.log("🚀 Server running on port 3003");
 });
 
 /* =========================

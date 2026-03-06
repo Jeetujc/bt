@@ -213,7 +213,7 @@ def process_message():
 def send_message(phone_number, message):
     """Send message via WhatsApp"""
     try:
-        response = requests.post('http://localhost:3001/send-message', json={
+        response = requests.post('http://localhost:3003/send-message', json={
             'number': phone_number,
             'message': message
         })
@@ -237,4 +237,4 @@ if __name__ == "__main__":
     scheduler_thread.start()
 
     # Start Flask app
-    app.run(port=5000)
+    app.run(port=5002)

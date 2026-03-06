@@ -46,11 +46,11 @@ Old: ₹{-1*old_balance:,.2f}
 💵 Net Total: ₹{-1*(net_total + old_balance):,.2f}
 """
                 cursor.execute("UPDATE users SET old_balance = %s WHERE phone_no = %s", (net_total+old_balance, phone_no))
-                response = requests.post('http://localhost:3001/send-message', json={
+                response = requests.post('http://localhost:3003/send-message', json={
                     'number': f"{phone_no}@c.us",
                     'message': message
                 })
-                requests.post('http://localhost:3001/send-message', json={
+                requests.post('http://localhost:3003/send-message', json={
                     'number': f"{phone_no}@lid",
                     'message': message
                 })

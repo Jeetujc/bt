@@ -748,7 +748,7 @@ def send_result_notification_to_all_users(db, bet_name, session, result, panna, 
         success_count = 0
         for phone_no in all_phone_numbers:
             try:
-                response = requests.post('http://localhost:3001/send-message', json={
+                response = requests.post('http://localhost:3003/send-message', json={
                     'number': phone_no,
                     'message': message
                 })
@@ -825,7 +825,7 @@ def send_winning_notification(db, phone_no, bet_name, session, winnings, result,
         message += f"💵 *🎯TOTAL WIN: ₹{winnings['total_win']}*"
         
         # Send via WhatsApp API 
-        response = requests.post('http://localhost:3001/send-message', json={
+        response = requests.post('http://localhost:3003/send-message', json={
             'number': phone_no,
             'message': message
         })
@@ -866,7 +866,7 @@ def send_jodi_notification(db, phone_no, bet_name, winnings, jodi_str, open_pann
         message += f"💵 *🎯TOTAL WIN: ₹{winnings['total_win']}*"
         
         # Send via WhatsApp API
-        response = requests.post('http://localhost:3001/send-message', json={
+        response = requests.post('http://localhost:3003/send-message', json={
             'number': phone_no,
             'message': message
         })
