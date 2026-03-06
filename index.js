@@ -2,6 +2,10 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const axios = require("axios");
 const qrcode = require("qrcode-terminal");
 const express = require("express");
+const fs = require("fs");
+
+const QUEUE_FILE = "queue.json";
+
 
 const client = new Client({
   authStrategy: new LocalAuth({
@@ -34,45 +38,76 @@ let isClientReady = false;
 let sendFailCount = 0;
 const MAX_FAILS = 3;
 
-const messageQueue = [];
+let messageQueue = [];
 let isProcessingQueue = false;
+
+/* Load queue */
+
+if (fs.existsSync(QUEUE_FILE)) {
+  try {
+    const saved = JSON.parse(fs.readFileSync(QUEUE_FILE));
+    if (Array.isArray(saved)) {
+      messageQueue = saved;
+      console.log("✅ Restored queue:", saved.length);
+    }
+  } catch {}
+}
+
+function saveQueue() {
+  fs.writeFileSync(QUEUE_FILE, JSON.stringify(messageQueue));
+}
 
 function enqueueMessage(chatId, content, options = {}) {
   messageQueue.push({ chatId, content, options });
+  saveQueue();
   processQueue();
 }
 
 async function processQueue() {
+
   if (isProcessingQueue) return;
-  if (messageQueue.length === 0) return;
   if (!isClientReady) return;
+  if (messageQueue.length === 0) return;
 
   isProcessingQueue = true;
 
-  const { chatId, content, options } = messageQueue.shift();
+  const msg = messageQueue[0];
 
   try {
-    const chat = await client.getChatById(chatId);
-    await chat.sendMessage(content, options);
+
+    await client.sendMessage(msg.chatId, msg.content, msg.options);
+    console.log("✅ Sent to", msg.chatId);
+    messageQueue.shift();
+    saveQueue();
 
     sendFailCount = 0;
 
-    // Throttle (important)
-    await new Promise(r => setTimeout(r, 500));
+    /* 60-80 messages per minute */
+    const delay = 800 + Math.random() * 200;
+    await new Promise(r => setTimeout(r, delay));
 
   } catch (error) {
-    console.error("❌ Queue send failed:", error.message);
+
+    console.log("❌ Send failed:", error.message);
 
     sendFailCount++;
 
     if (sendFailCount >= MAX_FAILS) {
-      console.error("🚨 Too many failures. Restarting app...");
+
+      console.log("🚨 Restarting bot (safe send loop)");
+
+      saveQueue();
+
       try { await client.destroy(); } catch {}
-      process.exit(1); // Let PM2 restart
+
+      process.exit(1);
     }
+
+    await new Promise(r => setTimeout(r, 5000));
   }
 
   isProcessingQueue = false;
+
   processQueue();
 }
 
@@ -80,35 +115,26 @@ async function processQueue() {
    EVENTS
 ========================= */
 
-client.on("qr", (qr) => {
-  console.log("📱 Scan this QR code:");
+client.on("qr", qr => {
+  console.log("📱 Scan QR");
   qrcode.generate(qr, { small: true });
 });
 
-client.on("ready", async () => {
-  console.log("✅ WhatsApp bot is ready!");
+client.on("ready", () => {
+  console.log("✅ Bot ready");
   isClientReady = true;
-
-  try {
-    await client.pupPage.evaluate(() => {
-      if (window.WWebJS && window.WWebJS.sendSeen) {
-        window.WWebJS.sendSeen = async () => true;
-      }
-    });
-    console.log("✅ SendSeen function patched successfully");
-  } catch (err) {
-    console.log("⚠️ Could not patch sendSeen:", err.message);
-  }
+  processQueue();
 });
 
-client.on("disconnected", async (reason) => {
+client.on("disconnected", async reason => {
   console.log("❌ Disconnected:", reason);
+  saveQueue();
   try { await client.destroy(); } catch {}
   process.exit(1);
 });
 
-client.on("auth_failure", (msg) => {
-  console.error("❌ Auth failure:", msg);
+client.on("auth_failure", msg => {
+  console.log("❌ Auth failure:", msg);
   process.exit(1);
 });
 
@@ -116,18 +142,20 @@ client.on("auth_failure", (msg) => {
    INCOMING MESSAGE
 ========================= */
 
-client.on("message", async (msg) => {
+client.on("message", async msg => {
+
   try {
+
     const payload = {
       number: msg.from,
       message: msg.body,
-      replied_message: null,
+      replied_message: null
     };
 
     if (msg.hasQuotedMsg) {
       try {
-        const quotedMsg = await msg.getQuotedMessage();
-        payload.replied_message = quotedMsg?.body || null;
+        const quoted = await msg.getQuotedMessage();
+        payload.replied_message = quoted?.body || null;
       } catch {}
     }
 
@@ -139,48 +167,43 @@ client.on("message", async (msg) => {
 
     const reply = response.data.reply;
 
-    if (reply && reply.trim() !== "") {
-      console.log("📨 Queueing reply...");
+    if (reply && reply.trim()) {
       enqueueMessage(msg.from, reply);
     }
 
-  } catch (error) {
-    console.error("❌ Error:", error.message);
+  } catch (e) {
+    console.log("❌ Incoming error:", e.message);
   }
+
 });
 
 /* =========================
    API SEND MESSAGE
 ========================= */
 
-app.post("/send-message", async (req, res) => {
-  try {
-    const { number, message } = req.body;
+app.post("/send-message", (req, res) => {
 
-    if (!isClientReady) {
-      return res.status(503).json({ success: false });
-    }
+  const { number, message } = req.body;
 
-    if (!number || !message) {
-      return res.status(400).json({ success: false });
-    }
+  if (!isClientReady)
+    return res.status(503).json({ success: false });
 
-    let chatId = number;
-    if (!number.includes("@")) {
-      chatId =
-        number.startsWith("91") && number.length === 12
-          ? `${number}@c.us`
-          : `${number}@lid`;
-    }
+  if (!number || !message)
+    return res.status(400).json({ success: false });
 
-    enqueueMessage(chatId, message);
+  let chatId = number;
 
-    res.json({ success: true });
-
-  } catch (error) {
-    console.error("❌ API Error:", error.message);
-    res.status(500).json({ success: false });
+  if (!number.includes("@")) {
+    chatId =
+      number.startsWith("91") && number.length === 12
+        ? `${number}@c.us`
+        : `${number}@lid`;
   }
+
+  enqueueMessage(chatId, message);
+
+  res.json({ success: true });
+
 });
 
 /* =========================
@@ -198,8 +221,12 @@ app.listen(3001, () => {
 ========================= */
 
 process.on("SIGINT", async () => {
-  console.log("🛑 Shutting down...");
+
+  console.log("🛑 Shutdown");
+
+  saveQueue();
+
   try { await client.destroy(); } catch {}
+
   process.exit(0);
 });
-

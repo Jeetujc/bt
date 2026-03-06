@@ -22,10 +22,8 @@ def get_data(command, db):
     if bet_type not in ['open', 'close']:
         return "Invalid bet type. Use 'open' or 'close'"
     
-    # Import the get_cut_for_number function
     from admin import get_cut_for_number
     
-    # Query to get all bet slips for the event and bet type, joined with users table
     query = """
         SELECT bs.bets, u.phone_no
         FROM bet_slips bs
@@ -40,49 +38,128 @@ def get_data(command, db):
     if not results:
         return f"No bet slips found for {event_name} {bet_type}"
     
-    # Combine all bets with user cuts applied
     combined_bets = {}
     for row in results:
         bets_json, phone_no = row
         bet_data = json.loads(bets_json) if isinstance(bets_json, str) else bets_json
         
-        # Get user's cut percentage (returns decimal like 0.1 for 10%)
         user_cut = get_cut_for_number(phone_no)
         
         for number, amount in bet_data.items():
-            number = (number)  # Convert bet number to integer
             original_amount = float(amount)
-            
-            # Apply cut: amount * (1 - cut_percentage)
             adjusted_amount = original_amount * (1 - user_cut)
-            
             combined_bets[number] = combined_bets.get(number, 0) + adjusted_amount
-    
-    # Format the output
+
     if not combined_bets:
         return f"No bets found for {event_name} {bet_type}"
+
+    cutoff = 0.5 if event_name in ['BD', 'KD', 'BN', 'KN'] else 1
+
+    # ── OPEN logic ────────────────────────────────────────────────
+    if bet_type == 'open':
+        single_totals = {}
+        panna_bets = {}
+
+        for number, amount in combined_bets.items():
+            final_amount = int(amount * cutoff)
+            d = len(number)
+
+            if d == 1:
+                single_totals[number] = single_totals.get(number, 0) + final_amount
+
+            elif d == 2:
+                # 12/10 = 1 → add amount to digit 1
+                digit = str(int(number) // 10)
+                single_totals[digit] = single_totals.get(digit, 0) + final_amount
+
+            elif d == 3:
+                panna_bets[number] = panna_bets.get(number, 0) + final_amount
+
+        output_lines = []
+        total_amount = 0
+
+        digit_sum = 0
+        for d in sorted(single_totals.keys()):
+            amt = single_totals[d]
+            output_lines.append(f"{d}={amt}")
+            digit_sum += amt
+            total_amount += amt
+        if single_totals and event_name not in ['BD', 'KD', 'BN', 'KN']:
+            output_lines.append(f"Total 1 digit = {digit_sum}")
+
+        panna_sum = 0
+        for number in sorted(panna_bets.keys(), key=lambda x: (len(x), x)):
+            amt = panna_bets[number]
+            output_lines.append(f"{number}={amt}")
+            panna_sum += amt
+            total_amount += amt
+        if panna_bets and event_name not in ['BD', 'KD', 'BN', 'KN']:
+            output_lines.append(f"Total 3 digit = {panna_sum}")
+
+        output_lines.append(f"Total Amount = {total_amount}")
+        return "\n".join(output_lines)
+
+    # ── CLOSE logic ───────────────────────────────────────────────
+    else:
+        get_open_query = """
+            SELECT number_1, number_2, number_3 
+            FROM bet_tracking 
+            WHERE bet_name = %s AND number_1 IS NOT NULL
+            ORDER BY id DESC LIMIT 1
+        """
+        cursor.execute(get_open_query, (event_name,))
+        open_data = cursor.fetchone()
+
+        if not open_data or any(v is None for v in open_data):
+            return "⚠️ Open result not found — cannot process close bets"
+
+        aa = (int(open_data[0]) + int(open_data[1]) + int(open_data[2])) % 10
+
+        single_totals = {}
+        panna_bets = {}
+
+        for number, amount in combined_bets.items():
+            final_amount = int(amount * cutoff)
+            d = len(number)
+
+            if d == 1:
+                single_totals[number] = single_totals.get(number, 0) + final_amount
+
+            elif d == 2:
+                # if 12//10 == aa → last digit (2) gets amount*9
+                if int(number) // 10 == aa:
+                    last_digit = str(int(number) % 10)
+                    payout = final_amount * 9
+                    single_totals[last_digit] = single_totals.get(last_digit, 0) + payout
+                # else ignore
+
+            elif d == 3:
+                panna_bets[number] = panna_bets.get(number, 0) + final_amount
+
+        output_lines = []
+        total_amount = 0
+
+        digit_sum = 0
+        for d in sorted(single_totals.keys()):
+            amt = single_totals[d]
+            output_lines.append(f"{d}={amt}")
+            digit_sum += amt
+            total_amount += amt
+        if single_totals and event_name not in ['BD', 'KD', 'BN', 'KN']:
+            output_lines.append(f"Total 1 digit = {digit_sum}")
+
+        panna_sum = 0
+        for number in sorted(panna_bets.keys(), key=lambda x: (len(x), x)):
+            amt = panna_bets[number]
+            output_lines.append(f"{number}={amt}")
+            panna_sum += amt
+            total_amount += amt
+        if panna_bets and event_name not in ['BD', 'KD', 'BN', 'KN']:
+            output_lines.append(f"Total 3 digit = {panna_sum}")
+
+        output_lines.append(f"Total Amount = {total_amount}")
+        return "\n".join(output_lines)
     
-    # Sort by bet number
-    sorted_bets = dict(
-    sorted(
-        combined_bets.items(),
-        key=lambda x: (len(x[0]), x[0])
-        )
-    )
-
-
-    
-    # Create formatted output
-    cutoff=1
-    if event_name in ['BD','KD','BN','KN']:
-        cutoff=.5
-    output_lines = []
-    for number, amount in sorted_bets.items():
-        output_lines.append(f"{number}={int(amount*cutoff)}")
-    
-    return "\n".join(output_lines)
-
-
 def load_config():
     """Load configuration from JSON file"""
     try:

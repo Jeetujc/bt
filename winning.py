@@ -2,6 +2,33 @@ import mysql.connector
 from datetime import datetime
 from nump import parse
 import json
+import os
+
+EVENT_TITLES = {}
+EVENT_FILE = "events_config.json"
+EVENT_FILE_MTIME = 0
+
+
+def load_event_titles():
+    global EVENT_TITLES, EVENT_FILE_MTIME
+    try:
+        mtime = os.path.getmtime(EVENT_FILE)
+
+        # reload only if file changed
+        if mtime != EVENT_FILE_MTIME:
+            with open(EVENT_FILE, "r") as f:
+                data = json.load(f)
+                EVENT_TITLES = {k.lower(): v["name"] for k, v in data.items()}
+                EVENT_FILE_MTIME = mtime
+                print("🔄 Event titles reloaded")
+
+    except Exception as e:
+        print(f"⚠️ Failed loading events_config.json: {e}")
+
+
+def get_event_title(code):
+    load_event_titles()   # auto reload check
+    return EVENT_TITLES.get(code.lower(), code.upper())
 
 # Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-08-15 06:35:39
 # Current User's Login: Jeetujc
@@ -704,8 +731,8 @@ def send_result_notification_to_all_users(db, bet_name, session, result, panna, 
         
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        message = f"🎯 *{bet_name.title()} {session.upper()} RESULTS*\n"
-        message += f"📅 {timestamp} UTC\n\n"
+        message = f"✈️ LIVE RESULT ✈️\n"
+        message += f"🎯 *{get_event_title(bet_name)} {session.upper()} *\n"
         
         if session.upper() == 'OPEN':
             # Format: 380/1 (result/panna) - BOLD and CENTERED
@@ -716,8 +743,6 @@ def send_result_notification_to_all_users(db, bet_name, session, result, panna, 
             jodi_str = f"{jodi:02d}" if jodi is not None else "00"
             message += f"               *{open_result}/{jodi_str}/{result}*\n\n"
         
-        message += f"📊 Results have been declared!\n"
-        message += f"🎉 Winners will receive their winning details shortly."
         
         # Send to all users
         success_count = 0
@@ -749,7 +774,7 @@ def send_winning_notification(db, phone_no, bet_name, session, winnings, result,
         
         timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         
-        message = f"🎯 *{bet_name.title()} {session.lower()} RESULTS*\n"
+        message = f"🎯 *{get_event_title(bet_name)} {session.lower()} RESULTS*\n"
         message += f"📅 {timestamp} UTC\n\n"
         
         if session.upper() == 'OPEN':
@@ -799,7 +824,7 @@ def send_winning_notification(db, phone_no, bet_name, session, winnings, result,
         
         message += f"💵 *🎯TOTAL WIN: ₹{winnings['total_win']}*"
         
-        # Send via WhatsApp API
+        # Send via WhatsApp API 
         response = requests.post('http://localhost:3001/send-message', json={
             'number': phone_no,
             'message': message
@@ -820,7 +845,7 @@ def send_jodi_notification(db, phone_no, bet_name, winnings, jodi_str, open_pann
         
         timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         
-        message = f"🎯 *{bet_name.title()} JODI RESULTS*\n"
+        message = f"🎯 *{get_event_title(bet_name)} JODI RESULTS*\n"
         message += f"📅 {timestamp} UTC\n\n"
         
         # Format: open_result/jodi/close_result - use actual close_result

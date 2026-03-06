@@ -1,32 +1,15 @@
 {
-    "bd": {
-        "code": "BD",
-        "name": "Baba Day",
-        "open_time": "11:58:15",
-        "close_time": "13:58:15"
-    },
-    "kd": {
-        "code": "KD",
-        "name": "Kurla Day",
-        "open_time": "12:59:10",
-        "close_time": "14:59:30"
-    },
-    "rd": {
-        "code": "RD",
-        "name": "Rajdhani Day",
-        "open_time": "15:15:05",
-        "close_time": "17:15:10"
-    },
-    "bn": {
-        "code": "BN",
-        "name": "Baba Night",
-        "open_time": "18:58:15",
-        "close_time": "19:58:15"
-    },
+    
     "kn": {
         "code": "KN",
         "name": "Kurla Night",
-        "open_time": "20:44:20",
-        "close_time": "22:44:20"
+        "open_time": "2:44:20",
+        "close_time": "16:21:20"
+    },
+    "a": {
+        "code": "a",
+        "name": "a",
+        "open_time": "16:30:20",
+        "close_time": "02:07:20"
     }
 }
